@@ -40,3 +40,15 @@ Questions
 * What seem to be useful or good features of each paper?
 * What types of queries or expressions or analyses seem tricky,  annoying or impossible to do?
 * Do you believe their evaluations?
+
+
+
+# Below, write progress notes (latest at the top)
+
+###  (date) title
+
+The goal
+
+What you tried
+
+What worked
