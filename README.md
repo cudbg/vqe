@@ -18,12 +18,16 @@ As a first pass, we need to
 Background Reading (read in order)
 
 * [picasso](./docs/reading/picassoavi.pdf): One of the original visual query languages!
-* [queryviz](./docs/reading/queryviz.pdf)
-  * see [Wolfgang's presentation on youtube](https://www.youtube.com/watch?v=kVFnQRGAQls)
-  * [Play with the queryviz demo](http://queryviz.com/online/)
+  * It's really long, just skim Section 5 to get a feel of how it works
+* [polaris](./docs/reading/polaris.pdf): Spawned Tableau, a 7 billion dollar company!
+  * Read Sections 3 and 4, which describes the key language features
 * [gesturedb](./docs/reading/gesturedb.pdf): focus on Sections 1, 3 and skim 5
   * see the video on the [website](http://interact.osu.edu/gesturedb/)
-* [dataplay](./docs/reading/dataplay.pdf)
+* [queryviz](./docs/reading/queryviz.pdf) 
+  * Section 2 is what's important
+  * see [Wolfgang's presentation on youtube](https://www.youtube.com/watch?v=kVFnQRGAQls)
+  * [Play with the queryviz demo](http://queryviz.com/online/)
+* [dataplay](./docs/reading/dataplay.pdf) (optional)
   * Focus on:
     * INTRODUCTION
     * QUERYING WITH DATA PLAY
@@ -39,6 +43,7 @@ Questions
 * What kind of user does each paper imagine?  What is that user trying to do?
 * What seem to be useful or good features of each paper?
 * What types of queries or expressions or analyses seem tricky,  annoying or impossible to do?
+* What other things (for example, data distributions) would be really useful when formulating queries?
 * Do you believe their evaluations?
 
 
