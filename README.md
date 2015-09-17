@@ -35,6 +35,8 @@ Background Reading (read in order)
   * [The demo paper](./docs/reading/dataplaydemo.pdf) may be easier to read
   * see [video of dataplay](https://vimeo.com/45918228)
   * see [dataplay's website](http://db.cs.yale.edu/dataplay/DB/DataPlay.html).  
+* [datasquid](http://datasquid.co/)
+  * watch the video on their website.
 
 
 
