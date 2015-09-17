@@ -136,7 +136,12 @@ Homework
 
 * create three benchmark queries that are hard to create based on the negative
   aspects of above systems
-* propose way to implement/specify them (2 queries minimum)
+  * this will be good to have a list of
+* propose one possible visual/text query interface
+  * it should be able to express at least one of them
+  * go deeep in terms of detail
+    * e.g., what interface/interaction for every little bit?
+  * if can't do the other queries, why not?
 * list of love-to-haves
 
 
