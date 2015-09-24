@@ -37,6 +37,7 @@ Background Reading (read in order)
   * see [dataplay's website](http://db.cs.yale.edu/dataplay/DB/DataPlay.html).  
 * [datasquid](http://datasquid.co/)
   * watch the video on their website.
+* [datatone](http://www.cond.org/datatone.html)
 
 
 
@@ -51,6 +52,72 @@ Questions
 
 
 # Below, write progress notes (latest at the top)
+
+### 9/24
+
+Some benchmark queries
+
+
+        Boat(bid, name, type, speed, color, manufactor_date, design_date, last_maintained_date)
+        Reservation(bid, cid, price, reservation_date, reservation_length,  used_boat_date, boat_returned)
+        Customer(cid, name, bday, address, license_no, level)
+
+        names of customers that have rented a red boat and a blue boat
+        names of customers that have rented at least 5 red boats and a blue boat
+        names of customers that have rented the fastest boat and the slowest boat
+        average age of customers whose average boat speed is above 10
+
+        
+Some more queries
+
+        SELECT  c AS median 
+        FROM    T 
+        WHERE 
+          (SELECT COUNT(*) FROM T AS T1 
+            WHERE T1.c < T.c) 
+          = 
+          (SELECT COUNT(*) FROM T AS T2 
+            WHERE T2.c > T.c); 
+
+Friends of friends
+
+        SELECT  F1.fromID,  count(distinct F3.toID)
+        FROM    BothFriends F1, 
+              BothFriends F2, 
+              BothFriends F3
+        WHERE   F1.toID = F2.fromID AND
+              F2.toID = F3.fromID
+        GROUP BY  F1.fromID;
+
+
+Clustering coefficient in a friend graph
+
+        CREATE VIEW NEIGHBOR_CNT AS 
+        SELECT    fromID AS nodeID, count(*) AS friend_cnt 
+        FROM    BothFriends 
+        GROUP BY  nodeID; 
+
+        CREATE VIEW TRIANGLES AS 
+        SELECT  F1.toID as root, F1.fromID AS f1, F2.fromID AS f1
+        FROM  BothFriends F1, BothFriends F2, Friends F3 
+        WHERE F1.toID = F2.toID     /* j,k both point to i */   AND
+            F1.fromID = F3.fromID   /* j two outgoing edges  */ AND
+            F3.toID = F2.fromID     /* j and k are friends */ 
+
+        CREATE VIEW NEIGHBOR_EDGE_CNT AS 
+        SELECT    root, COUNT(*) as cnt 
+        FROM    TRIANGLES 
+        GROUP BY  root;
+
+        CREATE VIEW CC_PER_NODE AS 
+        SELECT  NE.root, 
+            2.0*NE.cnt / (N.friend_cnt*(N.friend_cnt–1)) AS CC 
+        FROM  NEIGHBOR_EDGE_CNT NE, NEIGHBOR_CNT N 
+        WHERE   NE.root = N.nodeID; 
+
+        SELECT AVG(cc) FROM CC_PER_NODE; 
+
+
 
 
 ### 9/17 
