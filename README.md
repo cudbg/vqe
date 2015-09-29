@@ -1,5 +1,3 @@
-## Goals
-
 Is SQL just text?  No!  That's just a _textual form_ of query specification.
 Our goal is to take a look at some historically important projects that use
 visual forms of query specification, understand their strong and weak points, and
@@ -49,6 +47,95 @@ Questions
 * What other things (for example, data distributions) would be really useful when formulating queries?
 * Do you believe their evaluations?
 
+# Design Guidelines
+
+In user interface design, it helps to design within a framework:
+
+* pick a subset of the design parameters
+* have a user persona (a story) to ground the design process
+* have a set of design principles (~metrics) to evaluate how well the design is
+
+The following are some incomplete thoughts on this:
+
+### Design parameters
+
+* Number of relations
+  * small: feasible to search and find relation
+  * medium: keyword-like search sufficient to reduce to small set of relations to search through
+  * large: impossible to manually look for relation, may not know which relation of candidates to pick
+* Number of attributes
+  * small: feasible to look through manually
+  * medium: feasible to look through if organized and summarized properly
+  * large: infeasible if exact column/name is known
+* What the user knows
+  * The query and the data, but needs to formulate it
+  * The intended query result and the data, needs help expressing it
+  * What kind of result would be interesting, knows what type of data to expect, 
+  * New dataset, looking for something interesting
+*  Query complexity
+  * Number of relations
+  * Attributes picked
+  * Number of predicates
+  * Set-oriented predicates
+  * (Correlated) Subqueries
+* anything else?
+
+### User Personas
+
+Scenario: story about user using the system
+
+* concrete, realistic, fictional
+* user trying to achieve a goal
+* follow how user achieve the goal step by step
+
+Persona: description of a realistic user, their motivations, and their goals
+
+Bob (Tableau persona)
+
+* Marketer, can use excel, doesn't program
+* Has a big table of sales data
+* modest number (~20) attributes
+* wants to look at total sales over time across a number of dimensions (states, seasons, economic indicators)
+
+Joe 
+
+* Can write small python scripts, can write SQL comfortably
+* Small number of medical related relations (see medicare dataset)
+* Relations have huge number of attributes, all encoded
+* Have an idea of the set of query results he would like, but really hard to 
+  dig through the relation attributes to get what he's looking for
+  * may have to try many similar seeming attributes (CM1, CM2, CM3, ...) to find what he's looking for
+* Queries themselves are not too complicated
+
+Sally (expert querier)
+
+* Can write large complex programs
+* has a database of ~20 relations
+* attributes have long names e.g., "labeler_kwargs.parameter_one"
+* very familiar with ~5 of the relations, roughly knows about the result, could figure out by staring at relations long enough
+* has a complex nested query across multiple relations 
+  * sally knows most of the relations and how the join, but a few she needs to look up
+* Will want to run multiple slight variations with different filtering parameters and compare
+
+
+### Design Principles for Query Composition
+
+1. Tell us what you know
+1. Contextual recommendations
+1. Operations are not superfluous
+1. See the data all the time
+  * base data
+  * intermediate data
+  * result data
+  * changes in the intemediate results?
+
+### Criteria
+
+Operations
+
+* join
+  * what to join?
+  * what attributes to join?
 
 
 # Below, write progress notes (latest at the top)
