@@ -100,7 +100,7 @@ Bob (Tableau persona)
 Joe 
 
 * Can write small python scripts, can write SQL comfortably
-* Small number of medical related relations (see medicare dataset)
+* Small number of medical related relations (see medicare dataset medicare aca-compare-20142015)
 * Relations have huge number of attributes, all encoded
 * Have an idea of the set of query results he would like, but really hard to 
   dig through the relation attributes to get what he's looking for
