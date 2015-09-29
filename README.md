@@ -36,6 +36,7 @@ Background Reading (read in order)
 * [datasquid](http://datasquid.co/)
   * watch the video on their website.
 * [datatone](http://www.cond.org/datatone.html)
+* [Voyager](http://idl.cs.washington.edu/papers/voyager)
 
 
 
