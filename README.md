@@ -38,6 +38,10 @@ Background Reading (read in order)
 * [datatone](http://www.cond.org/datatone.html)
 * [Voyager](http://idl.cs.washington.edu/papers/voyager)
 
+Some other interesting systems
+
+* [DTAB](http://dtab.io/) Spreadsheet + javascript/scripting
+
 
 
 Questions
