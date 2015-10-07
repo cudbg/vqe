@@ -52,6 +52,10 @@ Questions
 * What other things (for example, data distributions) would be really useful when formulating queries?
 * Do you believe their evaluations?
 
+# Datasets
+
+* [Large list of datasets for computational journalism](http://cjlab.stanford.edu/2015/09/30/lab-launch-and-data-sets/)
+
 # Design Guidelines
 
 In user interface design, it helps to design within a framework:
