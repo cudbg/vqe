@@ -37,6 +37,8 @@ Background Reading (read in order)
   * watch the video on their website.
 * [datatone](http://www.cond.org/datatone.html)
 * [Voyager](http://idl.cs.washington.edu/papers/voyager)
+* [Profiler](http://vis.stanford.edu/files/2012-Profiler-AVI.pdf)
+* [Lineup](http://caleydo.github.io/projects/lineup/) see video at the bottom of page
 
 Some other interesting systems
 
