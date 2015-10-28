@@ -30,7 +30,7 @@ We can visualize these 45 attributes in one box, why?
 `WHERE pf_hcuff = Y` pf_hcuff can be any one of these attributes
 
 Therefore, we do it this way:
-![pic1](/attridiplay/images/pic1.png)
+![pic1](/attridisplay/images/pic1.png)
 ####30 attributes with say less than 20 possible values
 For other attributes with say less than 20 possible values, their discoveries and
 operations are similar as the above binary ones. Thus, we can group them to
