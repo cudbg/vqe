@@ -30,7 +30,7 @@ We can visualize these 45 attributes in one box, why?
 `WHERE pf_hcuff = Y` pf_hcuff can be any one of these attributes
 
 Therefore, we do it this way:
-![pic1](/images/pic1.png)
+![pic1](/images/pic1)
 ####30 attributes with say less than 20 possible values
 For other attributes with say less than 20 possible values, their discoveries and
 operations are similar as the above binary ones. Thus, we can group them to
@@ -49,7 +49,7 @@ total only represents about 8% of all records, then we may put them together as
 one value to visualize. Of course, we should highlight this modification, and
 users can click on it to expand details.
 In NYPD table, it contains about 20 this kind of attributes.
-![pic](/images/pic2.png)
+![pic](/images/pic2)
 #####15 attributes with null, one possible entry or sparse inputs
 Visualization of this kind of attributes can be tricky. To our knowledge, we
 think the attributes with all nulls can be ignored but just show users the stats
@@ -72,10 +72,10 @@ To find out this, for instance, in the following pictures, user can highlight
 In visualization section of sparse data, user can see attribute `forceuse = DO or DS`
 not appearing with `offverb = v` in the same records so often. Thus, their colors
 are very dark.
-![pic](/images/pic3.png)
+![pic](/images/pic3)
 Then user can un-click sparse data and click grouping data to see
 the second pic. The color of all attributes is modified into dark or light.
-![pic](/images/pic2.png)
+![pic](/images/pic2)
 - In this way, even sparse data is visualized in different section, user can still
 find the link between this data and other attributes
 - If we have this `highlight to dark or light other attributes`, user can discover
@@ -106,7 +106,7 @@ rid of some attribute with complicated inputs. -> kept about 7 attributes
 `other about 15 unique attributes`
 - we threw majority of them because they were not useful for us. Only date remained
 
-![pic](/images/pic4.png)
+![pic](/images/pic4)
 #####Extend to JOIN
 Here we show the visualization if user want to join these two tables NYPD and
 311 NYC Requests. Because (we assume) if user click two more tables, the main
@@ -119,7 +119,7 @@ So we put this two names together with the same color.
 
 Also, user can highlight some 'boxes' to do filtering, and do back to NYPD table
 to see the changes in darkness of all other attributes.
-![pic](/images/pic5.png)
+![pic](/images/pic5)
 #####Data with a long name
 In 311 NYC table, we found that some attribute have less then 10 possible values,
 but these values are long strings. If we visualize them without doing any
@@ -127,7 +127,7 @@ modification, it would be ugly. Thus, if our system can recognize this (long str
 and abbreviate it randomly(or combine first character of first 3 words). Since we
 make some changes on them, we should tell user by highlighting them in different
 color. And user can click on them to see original names or rename them.
-![pic](/images/pic6.png)
+![pic](/images/pic6)
 #####Question
 For those monthly released government data, can we use some statistical methods
 such as ANOVA or chi-squared test on the same attributes in 2013 and 2014 tables?
