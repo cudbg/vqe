@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>Bootstrap 101 Template</title>
+
+    <!-- Bootstrap -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/simple-sidebar.css') }}">
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div id="wrapper">
+    <div id="sidebar-wrapper">
+        <ul class="sidebar-nav">
+            <li class="sidebar-brand"><a href="#">VQE</a></li>
+                {% for n in data %}
+                  <li><a href='#' class="{{n}}">{{n}}</a></li>
+                {% endfor %}
+                <hr>
+                <li><a href='#' id = "saved">Saved</a></li>
+        </ul>
+    </div>
+    <div id="page-content-wrapper">
+        <div class="page-content">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-12">
+                      <!--search bar -->
+                     <!--<div class="col-lg-6 center-block" style="float:none;">-->
+                       <div class="col-lg-6 center-block" style="float:none;margin-left:160px;">
+                     <!--  <form role="form" action="/" method="POST">
+                        <div class="form-group"> -->
+                          <div class="input-group">
+                            <input type="text" class="form-control" id="value" name="value" placeholder="Search for...">
+                            <span class="input-group-btn">
+                              <button class="btn btn-default" type="submit" id="submitBtn">Go!</button>
+                            </span>
+                          </div>
+                    <!--     </div>
+                      </form> -->
+                    </div>
+                    <!-- end of search bar -->
+            <!--         <ul style="list-style:none"> -->
+                      <div id="output"></div>
+               <!--      
+                      <li></li>
+                   
+                    </ul> -->
+                    {% block body %}{% endblock %}
+                    <a href='#' id = "saveResults">Save results</a>
+                    </div>
+                </div>
+            </div>
+           
+        </div>
+    </div>
+</div>
+     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+     <script src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+  
+    <script type="text/javascript">
+  $(function() {
+    var temp; 
+    var tables = {{data|safe}}; 
+    $("#submitBtn").click(function() {
+         $.ajax({
+            type: "GET",
+            url: "/results",
+            contentType: "application/json; charset=utf-8",
+            data: { resultsValue: $('input[name="value"]').val() },
+            success: function(data) {
+                console.log(data); 
+                $('#output').empty(); 
+                 $('#output').append("<br>"); 
+                $('#output').append(data.value.join("<br>"));
+                var classname = document.getElementsByClassName("join");
+                for (var j = 0; j < classname.length; j++) {
+              
+                  (function(element) {
+
+                    element.addEventListener("click", function() {
+                      retrieveJoinData(element.innerText);
+                    });
+                  })(classname[j]); 
+                }
+
+            }
+        });     
+    });
+    for(var i in tables) {
+       (function(index) {
+            // var classname = document.getElementsByClassName(index);
+            // for (var j = 0; j < classname.length; j++) {
+            //   classname[j].addEventListener("click", function() {
+            //       retrieveData(index);
+            //   });
+            // }
+            document.addEventListener('click', function(e) {
+            if (e.target.tagName == 'A' && e.target.classList.contains(index)) {
+              retrieveData(index);
+             }
+             });
+         })(tables[i]);
+
+    }
+ 
+    function retrieveData(classname) {
+           $.ajax({
+              type: "POST",
+              url: "/tableData",
+               // data: {"json_str": JSON.stringify(tables[i])},
+               data: JSON.stringify({"json_str":classname}, null, '\t'),
+              contentType: "application/json; charset=utf-8",
+              success: function(data) {
+
+                  console.log(classname); 
+                  console.log(data); 
+                  $('#output').empty(); 
+                   $('#output').append("<br>"); 
+                  $('#output').append(data.value.join("<br>"));
+                  //$('#output').text(data.value);
+              }
+          });     
+  
+    }
+
+    function retrieveJoinData(joinInfo) {
+           $.ajax({
+              type: "POST",
+              url: "/joinData",
+               // data: {"json_str": JSON.stringify(tables[i])},
+               data: JSON.stringify({"json_str":joinInfo}, null, '\t'),
+              contentType: "application/json; charset=utf-8",
+              success: function(data) {
+                  $('#output').empty(); 
+                   $('#output').append("<br>"); 
+                   $('#output').append("<table border='1' style='width:100%'>"); 
+                  $('#output').append(data.value);
+                  $('#output').append("</table>");
+                  
+
+                  //$('#output').text(data.value);
+              }
+          });     
+  
+    }
+   
+    // $("#employees").click(function() {
+    //      $.ajax({
+    //         type: "GET",
+    //         url: "/employees",
+    //         contentType: "application/json; charset=utf-8",
+    //         success: function(data) {
+    //             console.log(data); 
+    //             $('#output').empty(); 
+    //              $('#output').append("<br>"); 
+    //             $('#output').append(data.value.join("<br>"));
+    //             //$('#output').text(data.value);
+    //         }
+    //     });     
+    // });
+    // $("#offices").click(function() {
+    //      $.ajax({
+    //         type: "GET",
+    //         url: "/offices",
+    //         contentType: "application/json; charset=utf-8",
+    //         success: function(data) {
+    //             console.log(data); 
+    //             $('#output').empty(); 
+    //              $('#output').append("<br>"); 
+    //             $('#output').append(data.value.join("<br>"));
+    //             //$('#output').text(data.value);
+    //         }
+    //     });     
+    // });
+    $("#saveResults").click(function() {
+          temp = $('#output').html(); 
+    });
+     $("#saved").click(function() {
+            $('#output').empty(); 
+            $('#output').append("<br>"); 
+            $('#output').html(temp);
+    });
+  });
+</script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+  </body>
+</html>
