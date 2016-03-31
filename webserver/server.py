@@ -225,14 +225,15 @@ def saved(results):
 
 @app.route('/results', methods=['GET'])
 def output():
-   
+    joinDict = {}
     output = []
     output2 = ""
     if request.args.get('resultsValue'):
-      keyword = request.args.get('resultsValue')
+      keywordList = request.args.get('resultsValue').split()
+      keyword = true
     else: 
-      keyword = ""
-    if(keyword != ""): 
+      keyword = false
+    if(keyword != false and len(keywordList) == 1): 
       cursor = g.conn.execute("SHOW TABLES")
       if(cursor.rowcount > 0):
         for r in cursor:
@@ -244,11 +245,12 @@ def output():
           if(cursor2.rowcount > 0):
             for r2 in cursor2:
               colum = r2[0]
-              sql_search_fields.append(colum + " LIKE('%%" + keyword + "%%')")
+              sql_search_fields.append(colum + " LIKE('%%" + keywordList[0] + "%%')")
           clause = ' OR '.join(sql_search_fields)
           sql_search += clause 
           cursor3 = g.conn.execute(sql_search)
           if(cursor3.rowcount != 0):
+            joinDict[table] = sql_search 
             output2 = ""
             output2 += "<a href='#' class = '" + table + "'>" + table + "</a>" 
             output.append(output2)
@@ -271,7 +273,100 @@ def output():
                 else:
                   #output.append(str(r3[2]) + "," + table + "," + str(r3[5]) + "," + str(r3[6]))
                   output.append("<a href ='#' class = 'join'>" + table + "JOIN" + str(r3[5]) + "ON" + str(r3[6]) + "</a>")
-    ret_data = {"value": output}
+    elif(len(keywordList) == 2):
+      tables_first = []
+      tables_second = []
+      cursor = g.conn.execute("SHOW TABLES")
+      if(cursor.rowcount > 0):
+        for r in cursor:
+          table = r[0]
+          sql_search = "SELECT * FROM " + table + " WHERE "
+          sql_search_fields = []
+          sql2 = "DESCRIBE " + table
+          cursor2 = g.conn.execute(sql2)
+          if(cursor2.rowcount > 0):
+            for r2 in cursor2:
+              colum = r2[0]
+              sql_search_fields.append(colum + " LIKE('%%" + keywordList[0] + "%%')")
+          clause = ' OR '.join(sql_search_fields)
+          sql_search += clause 
+          cursor3 = g.conn.execute(sql_search)
+          if(cursor3.rowcount != 0):
+            tables_first.append(table)
+      cursor = g.conn.execute("SHOW TABLES")
+      if(cursor.rowcount > 0):
+        for r in cursor:
+          table = r[0]
+          sql_search = "SELECT * FROM " + table + " WHERE "
+          sql_search_fields = []
+          sql2 = "DESCRIBE " + table
+          cursor2 = g.conn.execute(sql2)
+          if(cursor2.rowcount > 0):
+            for r2 in cursor2:
+              colum = r2[0]
+              sql_search_fields.append(colum + " LIKE('%%" + keywordList[1] + "%%')")
+          clause = ' OR '.join(sql_search_fields)
+          sql_search += clause 
+          cursor3 = g.conn.execute(sql_search)
+          if(cursor3.rowcount != 0):
+            tables_second.append(table)
+      for element in tables_first:
+        table = element
+        if table in tables_second: 
+          sql_search = "SELECT * FROM " + table + " WHERE "
+          sql_search_fields = []
+          sql2 = "DESCRIBE " + table
+          cursor2 = g.conn.execute(sql2)
+          if(cursor2.rowcount > 0):
+            for r2 in cursor2:
+              colum = r2[0]
+              sql_search_fields.append(colum + " LIKE('%%" + keywordList[0] + "%%')")
+              sql_search_fields.append(colum + " LIKE('%%" + keywordList[1] + "%%')")
+          clause = ' OR '.join(sql_search_fields)
+          sql_search += clause 
+          cursor3 = g.conn.execute(sql_search)
+          if(cursor3.rowcount != 0):
+            joinDict[table] = sql_search 
+            output2 = "Tables that contain both keywords: <br><br>"
+            output2 += "<a href='#' class = '" + table + "'>" + table + "</a>" 
+            output.append(output2)
+            output2 = ""
+            output2 += "Number of rows:  " + str(cursor3.rowcount) 
+            output.append(output2)
+            for result in cursor3:
+              y = [i.decode('latin-1').encode("utf-8") if isinstance(i, basestring) else i for i in list(result)]
+              output.append(y)
+            sql3 = "SELECT * FROM information_schema.KEY_COLUMN_USAGE WHERE  REFERENCED_TABLE_NAME = '" + table + "' OR TABLE_NAME = '" + table + "' AND TABLE_SCHEMA = 'sql5103570'";
+            print sql3
+            cursor3 = g.conn.execute(sql3)
+            for r3 in cursor3: 
+              if(r3[2] == 'PRIMARY'):
+                output.append(str(r3[2]) + "," + str(r3[6]))
+              else: 
+                if (r3[5] == table):
+                  #output.append(str(r3[2]) + "," + table + "," + str(r3[10]) + "," + str(r3[11]))
+                  output.append("<a href ='#' class = 'join'>" + table + "JOIN" + str(r3[10]) + "ON" + str(r3[11]) + "</a>")                     
+                else:
+                  #output.append(str(r3[2]) + "," + table + "," + str(r3[5]) + "," + str(r3[6]))
+                  output.append("<a href ='#' class = 'join'>" + table + "JOIN" + str(r3[5]) + "ON" + str(r3[6]) + "</a>")
+      output.append("<br>Joins that contain both keywords: <br>")
+      for element in tables_first:
+          table = element
+          if table not in tables_second: 
+            sql3 = "SELECT * FROM information_schema.KEY_COLUMN_USAGE WHERE  REFERENCED_TABLE_NAME = '" + table + "' OR TABLE_NAME = '" + table + "' AND TABLE_SCHEMA = 'sql5103570'";
+            cursor3 = g.conn.execute(sql3)
+            for r3 in cursor3: 
+              if(r3[2] != 'PRIMARY'):
+                if (r3[5] == table):
+                  if str(r3[10]) in tables_second: 
+                    #output.append(str(r3[2]) + "," + table + "," + str(r3[10]) + "," + str(r3[11]))
+                    output.append("<a href ='#' class = 'join'>" + table + "JOIN" + str(r3[10]) + "ON" + str(r3[11]) + "</a>")                     
+                else:
+                  if str(r3[5]) in tables_second: 
+                    #output.append(str(r3[2]) + "," + table + "," + str(r3[5]) + "," + str(r3[6]))
+                    output.append("<a href ='#' class = 'join'>" + table + "JOIN" + str(r3[5]) + "ON" + str(r3[6]) + "</a>") 
+
+    ret_data = {"value": output, "query": joinDict}
     return jsonify(ret_data)
 
 @app.route('/tableData', methods=["POST",'GET'])
@@ -290,20 +385,21 @@ def tableData():
 @app.route('/joinData', methods=["POST",'GET'])
 def joinData():
   joinInfo = request.json['json_str']
+  keyword = request.json['keyword']
+  query = request.json['json_dict']
   splitArr = joinInfo.split("ON",1)
   table1 = splitArr[0].split("JOIN",1)[0]
   table2 = splitArr[0].split("JOIN",1)[1]
-  column1 = table1 + "." + splitArr[1]
+  #column1 = table1 + "." + splitArr[1]
+  column1 = "tmp." + splitArr[1]
   column2 = table2 + "." + splitArr[1]
-  print table1
-  print table2
-  print column1
-  print column2 
-  cursor = g.conn.execute("SELECT * FROM " + table1 + "," + table2 + " WHERE " + column1 + "=" + column2)
+  print keyword
+  #cursor = g.conn.execute("SELECT * FROM " + table1 + "," + table2 + " WHERE " + column1 + "=" + column2)
+  cursor = g.conn.execute("SELECT * FROM " + "(" + query[table1] + ") AS tmp" + "," + table2 + " WHERE " + column1 + "=" + column2)
   rowData = []  
   for result in cursor:
     y = [i.decode('latin-1').encode("utf-8") if isinstance(i, basestring) else i for i in list(result)]
-    rowData.append("<tr><td>" + str(y) + "</td></tr>")
+    rowData.append(y)
   cursor.close()
   ret_data = {"value": rowData}
   return jsonify(ret_data)

@@ -66,8 +66,25 @@
 </div>
      <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
      <script src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/handlebars.js/4.0.5/handlebars.min.js"></script>
+     
     <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
-  
+  <script id="output-template" type="text/x-handlebars-template">
+   {% raw %}
+    <table border="1">
+      {{#each value}}
+      <tr>
+        {{#each this}}
+        <td>
+        {{this}}
+        </td>
+        {{/each}}
+      </tr>
+    {{/each}}
+    </table>
+    {% endraw %}
+    
+  </script>
     <script type="text/javascript">
   $(function() {
     var temp; 
@@ -86,12 +103,12 @@
                 var classname = document.getElementsByClassName("join");
                 for (var j = 0; j < classname.length; j++) {
               
-                  (function(element) {
+                  (function(element, joinDict) {
 
                     element.addEventListener("click", function() {
-                      retrieveJoinData(element.innerText);
+                      retrieveJoinData(element.innerText, joinDict);
                     });
-                  })(classname[j]); 
+                  })(classname[j], data.query); 
                 }
 
             }
@@ -125,28 +142,33 @@
 
                   console.log(classname); 
                   console.log(data); 
+                  var source   = $("#output-template").html();
+                  var template = Handlebars.compile(source);
                   $('#output').empty(); 
-                   $('#output').append("<br>"); 
-                  $('#output').append(data.value.join("<br>"));
-                  //$('#output').text(data.value);
+                  $('#output').append("<br>"); 
+                  $('#output').append(template(data)); 
+                 
+                  //$('#output').append(data.value.join("<br>"));
+                  
               }
           });     
   
     }
 
-    function retrieveJoinData(joinInfo) {
+    function retrieveJoinData(joinInfo, joinDict) {
            $.ajax({
               type: "POST",
               url: "/joinData",
                // data: {"json_str": JSON.stringify(tables[i])},
-               data: JSON.stringify({"json_str":joinInfo}, null, '\t'),
+               data: JSON.stringify({"json_str":joinInfo, "json_dict":joinDict, "keyword":$('input[name="value"]').val()}, null, '\t'),
               contentType: "application/json; charset=utf-8",
               success: function(data) {
+                  var source   = $("#output-template").html();
+                  var template = Handlebars.compile(source);
                   $('#output').empty(); 
                    $('#output').append("<br>"); 
-                   $('#output').append("<table border='1' style='width:100%'>"); 
-                  $('#output').append(data.value);
-                  $('#output').append("</table>");
+                 $('#output').append(template(data)); 
+                 
                   
 
                   //$('#output').text(data.value);
