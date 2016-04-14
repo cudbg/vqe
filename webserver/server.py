@@ -22,6 +22,8 @@ from sqlalchemy import *
 from sqlalchemy.pool import NullPool
 from flask import Flask, request, render_template, g, redirect, Response, jsonify, json 
 import sys  
+import datetime 
+
 
 reload(sys)  
 sys.setdefaultencoding('utf-8')
@@ -79,6 +81,8 @@ engine = create_engine(DATABASEURI)
 # END SQLITE SETUP CODE
 #
 
+def date_handler(obj):
+    return obj.isoformat() if hasattr(obj, 'isoformat') else obj
 
 
 @app.before_request
@@ -268,11 +272,42 @@ def output():
                 output.append(str(r3[2]) + "," + str(r3[6]))
               else: 
                 if (r3[5] == table):
-                  #output.append(str(r3[2]) + "," + table + "," + str(r3[10]) + "," + str(r3[11]))
-                  output.append("<a href ='#' class = 'join'>" + table + "JOIN" + str(r3[10]) + "ON" + str(r3[11]) + "</a>")                     
+                  #output.append(str(r3[2]) + "," + table + "," + str(r3[6]) + "," + str(r3[10]) + "," + str(r3[11]))
+                  output.append("<a href ='#' class = 'join'>" + table + "JOIN" + str(r3[10]) + "ON" + str(r3[11]) + "</a>")   
+                  column1 = "tmp." + str(r3[6])
+                  column2 = str(r3[10]) + "." + str(r3[11])
+                  joinQuery = "SELECT * FROM " + "(" + sql_search + ") AS tmp" + "," + str(r3[10]) + " WHERE " + column1 + "=" + column2
+                  cursor = g.conn.execute(joinQuery)
+                  output.append("Number of rows: " + str(cursor.rowcount)) 
+                  nullQuery = "SELECT COUNT(*) FROM (" + joinQuery + ") AS a WHERE "
+                  for item in cursor.keys(): 
+                    nullQuery += item + " IS NULL OR "
+                  nullQuery = nullQuery[:-3]
+                  cursor2 = g.conn.execute(nullQuery)
+                  output.append("Number of null values: " + str(cursor2.fetchone()[0]))
+                  output.append(cursor.keys())
+                  rowData = []  
+                  for result in cursor:
+                      #y = [i.decode('latin-1').encode("utf-8") if isinstance(i, basestring) else i for i in list(result)]
+                      y = [i.decode('latin-1').encode("utf-8") if isinstance(i, basestring) else (i.strftime('%m/%d/%Y') if isinstance(i, datetime.date) else i) for i in list(result)]
+                      output.append(y)
+                  cursor.close()   
+                  cursor2.close()               
                 else:
                   #output.append(str(r3[2]) + "," + table + "," + str(r3[5]) + "," + str(r3[6]))
                   output.append("<a href ='#' class = 'join'>" + table + "JOIN" + str(r3[5]) + "ON" + str(r3[6]) + "</a>")
+                  column1 = "tmp." + str(r3[6])
+                  column2 = str(r3[5]) + "." + str(r3[6])
+                  cursor = g.conn.execute("SELECT * FROM " + "(" + sql_search + ") AS tmp" + "," + str(r3[5]) + " WHERE " + column1 + "=" + column2)
+                  output.append("Number of rows: " + str(cursor.rowcount)) 
+                  
+                  output.append(cursor.keys())
+                  rowData = []  
+                  for result in cursor:
+                      #y = [i.decode('latin-1').encode("utf-8") if isinstance(i, basestring) else i for i in list(result)]
+                      y = [i.decode('latin-1').encode("utf-8") if isinstance(i, basestring) else (i.strftime('%m/%d/%Y') if isinstance(i, datetime.date) else i) for i in list(result)]
+                      output.append(y)
+                  cursor.close()  
     elif(len(keywordList) == 2):
       tables_first = []
       tables_second = []
@@ -398,12 +433,13 @@ def joinData():
   cursor = g.conn.execute("SELECT * FROM " + "(" + query[table1] + ") AS tmp" + "," + table2 + " WHERE " + column1 + "=" + column2)
   rowData = []  
   for result in cursor:
-    y = [i.decode('latin-1').encode("utf-8") if isinstance(i, basestring) else i for i in list(result)]
+    #y = [i.decode('latin-1').encode("utf-8") if isinstance(i, basestring) else i for i in list(result)]
+    y = [i.decode('latin-1').encode("utf-8") if isinstance(i, basestring) else (i.strftime('%m/%d/%Y') if isinstance(i, datetime.date) else i) for i in list(result)]
     rowData.append(y)
   cursor.close()
+  
   ret_data = {"value": rowData}
   return jsonify(ret_data)
-
 # @app.route('/employees', methods=['GET'])
 # def employees():
 #   cursor = g.conn.execute("SELECT * FROM employees")
