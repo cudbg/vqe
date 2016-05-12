@@ -10,18 +10,32 @@
     <!-- Bootstrap -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/simple-sidebar.css') }}">
+ 
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
     <!--[if lt IE 9]>
       <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
       <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
     <![endif]-->
+    <style>
+    #output span{
+      background-color:#FF9;
+      color:#555;
+    }
+
+    table.sortable thead {
+      background-color:#eee;
+      color:#666666;
+      font-weight: bold;
+      cursor: default;
+    }
+    </style>
   </head>
   <body>
     <div id="wrapper">
     <div id="sidebar-wrapper">
         <ul class="sidebar-nav">
-            <li class="sidebar-brand"><a href="#">VQE</a></li>
+            <li class="sidebar-brand">VQE<a href="#"></a></li>
                 {% for n in data %}
                   <li><a href='#' class="{{n}}">{{n}}</a></li>
                 {% endfor %}
@@ -50,6 +64,7 @@
                     </div>
                     <!-- end of search bar -->
             <!--         <ul style="list-style:none"> -->
+                     
                       <div id="output"></div>
                <!--      
                       <li></li>
@@ -66,29 +81,43 @@
 </div>
      <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
      <script src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
+       <script src="{{ url_for('static', filename='js/sorttable.js') }}"></script>
       <script src="https://cdnjs.cloudflare.com/ajax/libs/handlebars.js/4.0.5/handlebars.min.js"></script>
      
     <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
   <script id="output-template" type="text/x-handlebars-template">
    {% raw %}
-    <table border="1">
-      {{#each value}}
+    <table class="sortable" border="1" >
+      <thead>
       <tr>
-        {{#each this}}
-        <td>
-        {{this}}
-        </td>
+        {{#each columns}}
+        <th>
+          {{this}}
+        </th>
         {{/each}}
       </tr>
-    {{/each}}
+      </thead>
+      <tbody>
+        {{#each value}}
+        <tr>
+          {{#each this}}
+          <td>
+          {{this}}
+          </td>
+          {{/each}}
+        </tr>
+        {{/each}}
+      </tbody>
     </table>
     {% endraw %}
     
   </script>
+ 
     <script type="text/javascript">
   $(function() {
     var temp; 
     var tables = {{data|safe}}; 
+   
     $("#submitBtn").click(function() {
          $.ajax({
             type: "GET",
@@ -96,10 +125,66 @@
             contentType: "application/json; charset=utf-8",
             data: { resultsValue: $('input[name="value"]').val() },
             success: function(data) {
-                console.log(data); 
+                 
                 $('#output').empty(); 
                  $('#output').append("<br>"); 
-                $('#output').append(data.value.join("<br>"));
+                 //put breaks between each element in value array 
+                
+                       var source   = $("#output-template").html();
+                        var template = Handlebars.compile(source);
+                      //for tables
+                      for (var i = 0; i < data["tables"].length; i++) {
+                        var element = data["tables"][i]; 
+                        console.log(element); 
+                         $('#output').append(element["tableName"]);
+                          $('#output').append("<br>");
+                          $('#output').append(element["numRows"]);
+                          $('#output').append("<br>");
+                      
+                          $('#output').append(template(element["tableData"])); 
+                          $('#output').append("<br>");
+                      }
+
+                      //for joins 
+                      for (var i = 0; i < data["joins"].length; i++) {
+                        var element = data["joins"][i]; 
+                         $('#output').append(element["tableName"]);
+                          $('#output').append("<br>");
+                          $('#output').append(element["numRows"]);
+                          $('#output').append("<br>");
+                         $('#output').append(template(element["nullData"])); 
+                          $('#output').append("<br>");
+                           $('#output').append(template(element["uniqueData"])); 
+                          $('#output').append("<br>");
+                          $('#output').append(template(element["tableData"])); 
+                          $('#output').append("<br>");
+                       
+                      }
+
+                   
+             
+                       // var tableClass = document.getElementsByClassName("sortable");
+                       //  for (var j = 0; j < tableClass.length; j++) {
+                       //    console.log(tableClass[j]); 
+                       //    sorttable.makeSortable(tableClass[j]);
+                       //  }
+                      
+                    
+                 
+                //$('#output').append(data.value.join("<br>"));
+                var keywordList = $('input[name="value"]').val().split(" ");
+                var keyword1 = keywordList[0];
+                var keyword2 = keywordList[1]; 
+                //creating a regular expression that looks for either keyword 
+                 var query = new RegExp("(\\b" + keyword1 + "\\b|\\b" + keyword2 + "\\b)", "gim");
+                 //this stuff is for highlighting and the span has a different background color 
+                 var e = document.getElementById("output").innerHTML;
+                var enew = e.replace(/(<span>|<\/span>)/igm, "");
+                document.getElementById("output").innerHTML = enew;
+                var newe = enew.replace(query, "<span>$1</span>");
+                document.getElementById("output").innerHTML = newe;
+
+                //put event listeners on all the joins 
                 var classname = document.getElementsByClassName("join");
                 for (var j = 0; j < classname.length; j++) {
               
@@ -176,6 +261,7 @@
           });     
   
     }
+
    
     // $("#employees").click(function() {
     //      $.ajax({

@@ -23,6 +23,7 @@ from sqlalchemy.pool import NullPool
 from flask import Flask, request, render_template, g, redirect, Response, jsonify, json 
 import sys  
 import datetime 
+from decimal import Decimal 
 
 
 reload(sys)  
@@ -83,6 +84,17 @@ engine = create_engine(DATABASEURI)
 
 def date_handler(obj):
     return obj.isoformat() if hasattr(obj, 'isoformat') else obj
+
+
+# def bfs_paths(graph, start, goal):
+#     queue = [(start, [start])]
+#     while queue:
+#         (vertex, path) = queue.pop(0)
+#         for next in graph[vertex] - set(path):
+#             if next == goal:
+#                 yield path + [next]
+#             else:
+#                 queue.append((next, path + [next]))
 
 
 @app.before_request
@@ -227,11 +239,14 @@ def saved(results):
   print savedData
   return "success"
 
+
 @app.route('/results', methods=['GET'])
 def output():
     joinDict = {}
     output = []
     output2 = ""
+    tablesArray = []
+    joinArray = []
     if request.args.get('resultsValue'):
       keywordList = request.args.get('resultsValue').split()
       keyword = true
@@ -254,60 +269,122 @@ def output():
           sql_search += clause 
           cursor3 = g.conn.execute(sql_search)
           if(cursor3.rowcount != 0):
+            tablesObj = {}
+            tablesArray.append(tablesObj)
             joinDict[table] = sql_search 
-            output2 = ""
-            output2 += "<a href='#' class = '" + table + "'>" + table + "</a>" 
-            output.append(output2)
-            output2 = ""
-            output2 += "Number of rows:  " + str(cursor3.rowcount) 
-            output.append(output2)
+            tablesObj["tableName"] = "<a href='#' class = '" + table + "'>" + table + "</a>" 
+            tablesObj["numRows"] = "Number of rows:  " + str(cursor3.rowcount) 
+            tableValue = []
+            tablesObj["tableData"] = {"value": tableValue, "columns": cursor3.keys()}
             for result in cursor3:
               y = [i.decode('latin-1').encode("utf-8") if isinstance(i, basestring) else i for i in list(result)]
-              output.append(y)
-            sql3 = "SELECT * FROM information_schema.KEY_COLUMN_USAGE WHERE  REFERENCED_TABLE_NAME = '" + table + "' OR TABLE_NAME = '" + table + "' AND TABLE_SCHEMA = 'sql5103570'";
-            print sql3
-            cursor3 = g.conn.execute(sql3)
-            for r3 in cursor3: 
-              if(r3[2] == 'PRIMARY'):
-                output.append(str(r3[2]) + "," + str(r3[6]))
-              else: 
+              tableValue.append(y)
+            sql3 = "SELECT * FROM information_schema.KEY_COLUMN_USAGE WHERE  REFERENCED_TABLE_NAME = '" + table + "' OR TABLE_NAME = '" + table + "' AND TABLE_SCHEMA = 'sql5103570'"
+            cursor4 = g.conn.execute(sql3)
+            for r3 in cursor4: 
+              #if(r3[2] == 'PRIMARY'):
+                #output.append(str(r3[2]) + "," + str(r3[6]))
+              if(r3[2] != 'PRIMARY'):
+                joinObj = {}
+                joinArray.append(joinObj)
                 if (r3[5] == table):
                   #output.append(str(r3[2]) + "," + table + "," + str(r3[6]) + "," + str(r3[10]) + "," + str(r3[11]))
-                  output.append("<a href ='#' class = 'join'>" + table + "JOIN" + str(r3[10]) + "ON" + str(r3[11]) + "</a>")   
+                  joinObj["tableName"] = "<a href ='#' class = 'join'>" + table + "JOIN" + str(r3[10]) + "ON" + str(r3[11]) + "</a>"   
                   column1 = "tmp." + str(r3[6])
                   column2 = str(r3[10]) + "." + str(r3[11])
-                  joinQuery = "SELECT * FROM " + "(" + sql_search + ") AS tmp" + "," + str(r3[10]) + " WHERE " + column1 + "=" + column2
+                  #alias1 = column1 + " AS " + "tmp_" + str(r3[6]) + ", "
+                  #alias2 = column2 + " AS " + str(r3[10]) + "_" + str(r3[11])
+               
+                  joinQuery = "SELECT * FROM (" + sql_search + ") AS tmp" + " NATURAL JOIN " + str(r3[10]) 
                   cursor = g.conn.execute(joinQuery)
-                  output.append("Number of rows: " + str(cursor.rowcount)) 
-                  nullQuery = "SELECT COUNT(*) FROM (" + joinQuery + ") AS a WHERE "
-                  for item in cursor.keys(): 
-                    nullQuery += item + " IS NULL OR "
-                  nullQuery = nullQuery[:-3]
+                  joinObj["numRows"] = "Number of rows: " + str(cursor.rowcount)
+
+                  nullQuery = "SELECT "
+                  for item in set(cursor.keys()):
+                    nullQuery += "SUM(CASE WHEN " + item + " IS NULL THEN 1 ELSE 0 END) as " + "'Null values for " + item + "', "
+                  nullQuery = nullQuery[:-2]
+                  nullQuery += " FROM (" + joinQuery + ") AS a"              
                   cursor2 = g.conn.execute(nullQuery)
-                  output.append("Number of null values: " + str(cursor2.fetchone()[0]))
-                  output.append(cursor.keys())
-                  rowData = []  
+                  nullValue = []
+                  joinObj["nullData"] = {"value": nullValue, "columns": cursor2.keys()}
+                  for result in cursor2:
+                      #y = [i.decode('latin-1').encode("utf-8") if isinstance(i, basestring) else i for i in list(result)]
+                      y = [i.decode('latin-1').encode("utf-8") if isinstance(i, basestring) else (i.strftime('%m/%d/%Y') if isinstance(i, datetime.date) else str(i) if isinstance(i, Decimal) else i) for i in list(result)]
+                      nullValue.append(y)
+                  uniqueQuery = "SELECT "
+                  for item in set(cursor.keys()):
+                    uniqueQuery += "COUNT(DISTINCT " + item + ") as 'Unique values for " + item + "', "
+                  uniqueQuery = uniqueQuery[:-2]
+                  uniqueQuery += "  FROM (" + joinQuery + ") AS a"
+                  cursor3 = g.conn.execute(uniqueQuery)
+                  uniqueValue = []
+                  joinObj["uniqueData"] = {"value": uniqueValue, "columns": cursor3.keys()}
+                  for result in cursor3:
+                      #y = [i.decode('latin-1').encode("utf-8") if isinstance(i, basestring) else i for i in list(result)]
+                      y = [i.decode('latin-1').encode("utf-8") if isinstance(i, basestring) else (i.strftime('%m/%d/%Y') if isinstance(i, datetime.date) else str(i) if isinstance(i, Decimal) else i) for i in list(result)]
+                      uniqueValue.append(y)
+                  #output.append("Number of null values: " + str(cursor2.fetchone()[0]))
+                  
+                  tableValue = []
+                  joinObj["tableData"] = {"value": tableValue, "columns" : cursor.keys()}
+                  counter = 0
                   for result in cursor:
                       #y = [i.decode('latin-1').encode("utf-8") if isinstance(i, basestring) else i for i in list(result)]
+                      if counter == 30:
+                        break
                       y = [i.decode('latin-1').encode("utf-8") if isinstance(i, basestring) else (i.strftime('%m/%d/%Y') if isinstance(i, datetime.date) else i) for i in list(result)]
-                      output.append(y)
+                      tableValue.append(y)
+                      counter = counter + 1
                   cursor.close()   
-                  cursor2.close()               
+                  cursor2.close()  
+                  cursor3.close()             
                 else:
                   #output.append(str(r3[2]) + "," + table + "," + str(r3[5]) + "," + str(r3[6]))
-                  output.append("<a href ='#' class = 'join'>" + table + "JOIN" + str(r3[5]) + "ON" + str(r3[6]) + "</a>")
+                  joinObj["tableName"] = "<a href ='#' class = 'join'>" + table + "JOIN" + str(r3[5]) + "ON" + str(r3[6]) + "</a>"
                   column1 = "tmp." + str(r3[6])
                   column2 = str(r3[5]) + "." + str(r3[6])
-                  cursor = g.conn.execute("SELECT * FROM " + "(" + sql_search + ") AS tmp" + "," + str(r3[5]) + " WHERE " + column1 + "=" + column2)
-                  output.append("Number of rows: " + str(cursor.rowcount)) 
-                  
-                  output.append(cursor.keys())
-                  rowData = []  
+               
+                  joinQuery = "SELECT * FROM (" + sql_search + ") AS tmp" + " NATURAL JOIN " + str(r3[5]) 
+                  cursor = g.conn.execute(joinQuery)
+
+                  joinObj["numRows"] = "Number of rows: " + str(cursor.rowcount)
+                  nullQuery = "SELECT "
+                  for item in set(cursor.keys()):
+                    nullQuery += "SUM(CASE WHEN " + item + " IS NULL THEN 1 ELSE 0 END) as " + "'Null values for " + item + "', "
+                  nullQuery = nullQuery[:-2]
+                  nullQuery += " FROM (" + joinQuery + ") AS a"               
+                  cursor2 = g.conn.execute(nullQuery)
+                  nullValue = []
+                  joinObj["nullData"] = {"value": nullValue, "columns": cursor2.keys()}
+                  for result in cursor2:
+                      #y = [i.decode('latin-1').encode("utf-8") if isinstance(i, basestring) else i for i in list(result)]
+                      y = [i.decode('latin-1').encode("utf-8") if isinstance(i, basestring) else (i.strftime('%m/%d/%Y') if isinstance(i, datetime.date) else str(i) if isinstance(i, Decimal) else i) for i in list(result)]
+                      nullValue.append(y)
+                  uniqueQuery = "SELECT "
+                  for item in set(cursor.keys()):
+                    uniqueQuery += "COUNT(DISTINCT " + item + ") as 'Unique values for " + item + "', "
+                  uniqueQuery = uniqueQuery[:-2]
+                  uniqueQuery += "  FROM (" + joinQuery + ") AS a"
+                  cursor3 = g.conn.execute(uniqueQuery)
+                  uniqueValue = []
+                  joinObj["uniqueData"] = {"value": uniqueValue, "columns": cursor3.keys()}
+                  for result in cursor3:
+                      #y = [i.decode('latin-1').encode("utf-8") if isinstance(i, basestring) else i for i in list(result)]
+                      y = [i.decode('latin-1').encode("utf-8") if isinstance(i, basestring) else (i.strftime('%m/%d/%Y') if isinstance(i, datetime.date) else str(i) if isinstance(i, Decimal) else i) for i in list(result)]
+                      uniqueValue.append(y)
+                  tableValue = []
+                  joinObj["tableData"] = {"value": tableValue, "columns" : cursor.keys()}
+                  counter = 0
                   for result in cursor:
                       #y = [i.decode('latin-1').encode("utf-8") if isinstance(i, basestring) else i for i in list(result)]
+                      if counter == 30:
+                        break 
                       y = [i.decode('latin-1').encode("utf-8") if isinstance(i, basestring) else (i.strftime('%m/%d/%Y') if isinstance(i, datetime.date) else i) for i in list(result)]
-                      output.append(y)
+                      tableValue.append(y)
+                      counter = counter + 1
                   cursor.close()  
+                  cursor2.close()
+                  cursor3.close()
     elif(len(keywordList) == 2):
       tables_first = []
       tables_second = []
@@ -361,34 +438,127 @@ def output():
           sql_search += clause 
           cursor3 = g.conn.execute(sql_search)
           if(cursor3.rowcount != 0):
+           
+            tablesObj = {}
+            tablesArray.append(tablesObj)
             joinDict[table] = sql_search 
-            output2 = "Tables that contain both keywords: <br><br>"
-            output2 += "<a href='#' class = '" + table + "'>" + table + "</a>" 
-            output.append(output2)
-            output2 = ""
-            output2 += "Number of rows:  " + str(cursor3.rowcount) 
-            output.append(output2)
+            
+            tablesObj["tableName"] = "<a href='#' class = '" + table + "'>" + table + "</a>" 
+            tablesObj["numRows"] = "Number of rows:  " + str(cursor3.rowcount) 
+            tableValue = []
+            tablesObj["tableData"] = {"value": tableValue, "columns": cursor3.keys()}
             for result in cursor3:
               y = [i.decode('latin-1').encode("utf-8") if isinstance(i, basestring) else i for i in list(result)]
-              output.append(y)
-            sql3 = "SELECT * FROM information_schema.KEY_COLUMN_USAGE WHERE  REFERENCED_TABLE_NAME = '" + table + "' OR TABLE_NAME = '" + table + "' AND TABLE_SCHEMA = 'sql5103570'";
-            print sql3
-            cursor3 = g.conn.execute(sql3)
-            for r3 in cursor3: 
-              if(r3[2] == 'PRIMARY'):
-                output.append(str(r3[2]) + "," + str(r3[6]))
-              else: 
+              tableValue.append(y)
+            sql3 = "SELECT * FROM information_schema.KEY_COLUMN_USAGE WHERE  REFERENCED_TABLE_NAME = '" + table + "' OR TABLE_NAME = '" + table + "' AND TABLE_SCHEMA = 'sql5103570'"
+            cursor4 = g.conn.execute(sql3)
+            for r3 in cursor4: 
+              if(r3[2] != 'PRIMARY'):
+                joinObj = {}
+                joinArray.append(joinObj)
                 if (r3[5] == table):
-                  #output.append(str(r3[2]) + "," + table + "," + str(r3[10]) + "," + str(r3[11]))
-                  output.append("<a href ='#' class = 'join'>" + table + "JOIN" + str(r3[10]) + "ON" + str(r3[11]) + "</a>")                     
+                  #output.append(str(r3[2]) + "," + table + "," + str(r3[6]) + "," + str(r3[10]) + "," + str(r3[11]))
+                  joinObj["tableName"] = "<a href ='#' class = 'join'>" + table + "JOIN" + str(r3[10]) + "ON" + str(r3[11]) + "</a>"   
+                  column1 = "tmp." + str(r3[6])
+                  column2 = str(r3[10]) + "." + str(r3[11])
+                  #alias1 = column1 + " AS " + "tmp_" + str(r3[6]) + ", "
+                  #alias2 = column2 + " AS " + str(r3[10]) + "_" + str(r3[11])
+               
+                  joinQuery = "SELECT * FROM (" + sql_search + ") AS tmp" + " NATURAL JOIN " + str(r3[10]) 
+                  cursor = g.conn.execute(joinQuery)
+                  joinObj["numRows"] = "Number of rows: " + str(cursor.rowcount)
+
+                  nullQuery = "SELECT "
+                  for item in set(cursor.keys()):
+                    nullQuery += "SUM(CASE WHEN " + item + " IS NULL THEN 1 ELSE 0 END) as " + "'Null values for " + item + "', "
+                  nullQuery = nullQuery[:-2]
+                  nullQuery += " FROM (" + joinQuery + ") AS a"              
+                  cursor2 = g.conn.execute(nullQuery)
+                  nullValue = []
+                  joinObj["nullData"] = {"value": nullValue, "columns": cursor2.keys()}
+                  for result in cursor2:
+                      #y = [i.decode('latin-1').encode("utf-8") if isinstance(i, basestring) else i for i in list(result)]
+                      y = [i.decode('latin-1').encode("utf-8") if isinstance(i, basestring) else (i.strftime('%m/%d/%Y') if isinstance(i, datetime.date) else str(i) if isinstance(i, Decimal) else i) for i in list(result)]
+                      nullValue.append(y)
+                  uniqueQuery = "SELECT "
+                  for item in set(cursor.keys()):
+                    uniqueQuery += "COUNT(DISTINCT " + item + ") as 'Unique values for " + item + "', "
+                  uniqueQuery = uniqueQuery[:-2]
+                  uniqueQuery += "  FROM (" + joinQuery + ") AS a"
+                  cursor3 = g.conn.execute(uniqueQuery)
+                  uniqueValue = []
+                  joinObj["uniqueData"] = {"value": uniqueValue, "columns": cursor3.keys()}
+                  for result in cursor3:
+                      #y = [i.decode('latin-1').encode("utf-8") if isinstance(i, basestring) else i for i in list(result)]
+                      y = [i.decode('latin-1').encode("utf-8") if isinstance(i, basestring) else (i.strftime('%m/%d/%Y') if isinstance(i, datetime.date) else str(i) if isinstance(i, Decimal) else i) for i in list(result)]
+                      uniqueValue.append(y)
+                  #output.append("Number of null values: " + str(cursor2.fetchone()[0]))
+                  
+                  tableValue = []
+                  joinObj["tableData"] = {"value": tableValue, "columns" : cursor.keys()}
+                  counter = 0
+                  for result in cursor:
+                      #y = [i.decode('latin-1').encode("utf-8") if isinstance(i, basestring) else i for i in list(result)]
+                      if counter == 30:
+                        break
+                      y = [i.decode('latin-1').encode("utf-8") if isinstance(i, basestring) else (i.strftime('%m/%d/%Y') if isinstance(i, datetime.date) else i) for i in list(result)]
+                      tableValue.append(y)
+                      counter = counter + 1
+                  cursor.close()   
+                  cursor2.close()  
+                  cursor3.close()               
                 else:
                   #output.append(str(r3[2]) + "," + table + "," + str(r3[5]) + "," + str(r3[6]))
-                  output.append("<a href ='#' class = 'join'>" + table + "JOIN" + str(r3[5]) + "ON" + str(r3[6]) + "</a>")
+                  joinObj["tableName"] = "<a href ='#' class = 'join'>" + table + "JOIN" + str(r3[5]) + "ON" + str(r3[6]) + "</a>"
+                  column1 = "tmp." + str(r3[6])
+                  column2 = str(r3[5]) + "." + str(r3[6])
+               
+                  joinQuery = "SELECT * FROM (" + sql_search + ") AS tmp" + " NATURAL JOIN " + str(r3[5]) 
+                  cursor = g.conn.execute(joinQuery)
+
+                  joinObj["numRows"] = "Number of rows: " + str(cursor.rowcount)
+                  nullQuery = "SELECT "
+                  for item in set(cursor.keys()):
+                    nullQuery += "SUM(CASE WHEN " + item + " IS NULL THEN 1 ELSE 0 END) as " + "'Null values for " + item + "', "
+                  nullQuery = nullQuery[:-2]
+                  nullQuery += " FROM (" + joinQuery + ") AS a"               
+                  cursor2 = g.conn.execute(nullQuery)
+                  nullValue = []
+                  joinObj["nullData"] = {"value": nullValue, "columns": cursor2.keys()}
+                  for result in cursor2:
+                      #y = [i.decode('latin-1').encode("utf-8") if isinstance(i, basestring) else i for i in list(result)]
+                      y = [i.decode('latin-1').encode("utf-8") if isinstance(i, basestring) else (i.strftime('%m/%d/%Y') if isinstance(i, datetime.date) else str(i) if isinstance(i, Decimal) else i) for i in list(result)]
+                      nullValue.append(y)
+                  uniqueQuery = "SELECT "
+                  for item in set(cursor.keys()):
+                    uniqueQuery += "COUNT(DISTINCT " + item + ") as 'Unique values for " + item + "', "
+                  uniqueQuery = uniqueQuery[:-2]
+                  uniqueQuery += "  FROM (" + joinQuery + ") AS a"
+                  cursor3 = g.conn.execute(uniqueQuery)
+                  uniqueValue = []
+                  joinObj["uniqueData"] = {"value": uniqueValue, "columns": cursor3.keys()}
+                  for result in cursor3:
+                      #y = [i.decode('latin-1').encode("utf-8") if isinstance(i, basestring) else i for i in list(result)]
+                      y = [i.decode('latin-1').encode("utf-8") if isinstance(i, basestring) else (i.strftime('%m/%d/%Y') if isinstance(i, datetime.date) else str(i) if isinstance(i, Decimal) else i) for i in list(result)]
+                      uniqueValue.append(y)
+                  tableValue = []
+                  joinObj["tableData"] = {"value": tableValue, "columns" : cursor.keys()}
+                  counter = 0
+                  for result in cursor:
+                      #y = [i.decode('latin-1').encode("utf-8") if isinstance(i, basestring) else i for i in list(result)]
+                      if counter == 30:
+                        break 
+                      y = [i.decode('latin-1').encode("utf-8") if isinstance(i, basestring) else (i.strftime('%m/%d/%Y') if isinstance(i, datetime.date) else i) for i in list(result)]
+                      tableValue.append(y)
+                      counter = counter + 1
+                  cursor.close()  
+                  cursor2.close()
+                  cursor3.close()
       output.append("<br>Joins that contain both keywords: <br>")
       for element in tables_first:
           table = element
           if table not in tables_second: 
-            sql3 = "SELECT * FROM information_schema.KEY_COLUMN_USAGE WHERE  REFERENCED_TABLE_NAME = '" + table + "' OR TABLE_NAME = '" + table + "' AND TABLE_SCHEMA = 'sql5103570'";
+            sql3 = "SELECT * FROM information_schema.KEY_COLUMN_USAGE WHERE  REFERENCED_TABLE_NAME = '" + table + "' OR TABLE_NAME = '" + table + "' AND TABLE_SCHEMA = 'sql5103570'"
             cursor3 = g.conn.execute(sql3)
             for r3 in cursor3: 
               if(r3[2] != 'PRIMARY'):
@@ -401,20 +571,37 @@ def output():
                     #output.append(str(r3[2]) + "," + table + "," + str(r3[5]) + "," + str(r3[6]))
                     output.append("<a href ='#' class = 'join'>" + table + "JOIN" + str(r3[5]) + "ON" + str(r3[6]) + "</a>") 
 
-    ret_data = {"value": output, "query": joinDict}
+
+    ret_data = {"tables": tablesArray, "joins": joinArray, "query": joinDict}
+    sortArray = ret_data["joins"]
+    for i in range(0, len(sortArray)):
+      initialNum = [int(s) for s in sortArray[i]["numRows"].split() if s.isdigit()]
+      minValue = initialNum[0]
+      minIndex = i
+      for j in range(i, len(sortArray)):
+          num2 = [int(s) for s in sortArray[j]["numRows"].split() if s.isdigit()]
+          if minValue > num2[0]:
+            minValue = num2[0]
+            minIndex = j
+      print minValue 
+      sortArray[i], sortArray[minIndex] = sortArray[minIndex], sortArray[i]
+   
+    #ret_data = {"value": output, "query": joinDict}
     return jsonify(ret_data)
 
 @app.route('/tableData', methods=["POST",'GET'])
 def tableData():
   id = request.json['json_str']
   cursor = g.conn.execute("SELECT * FROM " + id)
+  columns = cursor.keys()
   rowData = []  
   for result in cursor:
     #customers.append(result[0].decode('unicode_escape').encode('ascii','ignore'))  # can also be accessed using result[0]
-    y = [i.decode('latin-1').encode("utf-8") if isinstance(i, basestring) else i for i in list(result)]
+    #y = [i.decode('latin-1').encode("utf-8") if isinstance(i, basestring) else i for i in list(result)]
+    y = [i.decode('latin-1').encode("utf-8") if isinstance(i, basestring) else (i.strftime('%m/%d/%Y') if isinstance(i, datetime.date) else i) for i in list(result)]
     rowData.append(y)
   cursor.close()
-  ret_data = {"value": rowData}
+  ret_data = {"value": rowData, "columns" : columns}
   return jsonify(ret_data)
 
 @app.route('/joinData', methods=["POST",'GET'])
@@ -428,9 +615,10 @@ def joinData():
   #column1 = table1 + "." + splitArr[1]
   column1 = "tmp." + splitArr[1]
   column2 = table2 + "." + splitArr[1]
-  print keyword
-  #cursor = g.conn.execute("SELECT * FROM " + table1 + "," + table2 + " WHERE " + column1 + "=" + column2)
-  cursor = g.conn.execute("SELECT * FROM " + "(" + query[table1] + ") AS tmp" + "," + table2 + " WHERE " + column1 + "=" + column2)
+  
+  queryForCursor = "SELECT * FROM " + "(" + query[table1] + ") AS tmp" + " NATURAL JOIN " + table2 
+  cursor = g.conn.execute(queryForCursor)
+  columns = cursor.keys()
   rowData = []  
   for result in cursor:
     #y = [i.decode('latin-1').encode("utf-8") if isinstance(i, basestring) else i for i in list(result)]
@@ -438,7 +626,7 @@ def joinData():
     rowData.append(y)
   cursor.close()
   
-  ret_data = {"value": rowData}
+  ret_data = {"value": rowData, "columns" : columns}
   return jsonify(ret_data)
 # @app.route('/employees', methods=['GET'])
 # def employees():
